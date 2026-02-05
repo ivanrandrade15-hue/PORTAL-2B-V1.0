@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Portal 2B - Sala do Futuro</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #0ea5e9, #1e3a8a);
+  color: #fff;
+}
+
+/* ESCONDER */
+.hidden { display: none; }
+
+/* LOGIN */
+.login {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-box {
+  background: rgba(255,255,255,0.15);
+  padding: 30px;
+  border-radius: 16px;
+  width: 300px;
+  text-align: center;
+}
+
+.login-box input {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 10px;
+  border: none;
+}
+
+/* HEADER */
+header {
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header button {
+  background: #ef4444;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* NAV */
+nav {
+  display: flex;
+  gap: 10px;
+  padding: 0 20px;
+}
+
+nav button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  cursor: pointer;
+}
+
+nav button.active {
+  background: #22c55e;
+}
+
+/* CONTAINER */
+.container {
+  max-width: 1000px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* CARD */
+.card {
+  background: rgba(255,255,255,0.18);
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+/* FORM */
+input, textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  margin: 6px 0;
+}
+
+button.add {
+  background: #22c55e;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* PROJECT */
+.project {
+  background: rgba(0,0,0,0.25);
+  padding: 15px;
+  border-radius: 12px;
+  margin-top: 10px;
+}
+
+.project button {
+  background: none;
+  border: none;
+  color: #ff4d6d;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.tag {
+  font-size: 12px;
+  opacity: 0.85;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="login">
+  <div class="login-box">
+    <h2>Portal 2B</h2>
+    <p>Sala do Futuro</p>
+    <input id="nome" placeholder="Seu nome">
+    <input id="ra" placeholder="Seu RA">
+    <button onclick="login()">Entrar</button>
+  </div>
+</div>
+
+<!-- PORTAL -->
+<div id="portal" class="hidden">
+
+<header>
+  <h3 id="welcome"></h3>
+  <button onclick="logout()">Sair</button>
+</header>
+
+<nav>
+  <button class="active" onclick="openTab('home', this)">🏠 Início</button>
+  <button onclick="openTab('projects', this)">🚀 Projetos</button>
+  <button onclick="openTab('ranking', this)">🏆 Ranking</button>
+</nav>
+
+<div class="container">
+
+  <!-- HOME -->
+  <div id="home" class="tab">
+    <div class="card">
+      <h3>Bem-vindo 👋</h3>
+      <p>Portal colaborativo da turma 2B.</p>
+    </div>
+  </div>
+
+  <!-- PROJECTS -->
+  <div id="projects" class="tab hidden">
+    <div class="card">
+      <h3>Novo Projeto</h3>
+      <input id="pname" placeholder="Nome do projeto">
+      <textarea id="pdesc" placeholder="Descrição"></textarea>
+      <input id="plink" placeholder="Link (GitHub / Site)">
+      <button class="add" onclick="addProject()">Publicar</button>
+    </div>
+
+    <div class="card">
+      <h3>Projetos da Turma</h3>
+      <div id="projectList"></div>
+    </div>
+  </div>
+
+  <!-- RANKING -->
+  <div id="ranking" class="tab hidden">
+    <div class="card">
+      <h3>🏆 Ranking</h3>
+      <div id="rankingList"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+let user = null;
+
+/* LOGIN */
+function login() {
+  const nomeVal = nome.value.trim();
+  const raVal = ra.value.trim();
+
+  if (nomeVal === "" || raVal === "") {
+    alert("Preencha nome e RA");
+    return;
+  }
+
+  user = { nome: nomeVal, ra: raVal };
+  localStorage.setItem("portal2B_user", JSON.stringify(user));
+
+  login.classList.add("hidden");
+  portal.classList.remove("hidden");
+  welcome.innerText = `Olá, ${user.nome} (RA ${user.ra})`;
+
+  loadProjects();
+  loadRanking();
+}
+
+/* LOGOUT */
+function logout() {
+  localStorage.removeItem("portal2B_user");
+  location.reload();
+}
+
+/* ABAS */
+function openTab(tab, btn) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.add("hidden"));
+  document.getElementById(tab).classList.remove("hidden");
+
+  document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+}
+
+/* PROJETOS */
+function addProject() {
+  if (!pname.value || !pdesc.value) return alert("Preencha o projeto");
+
+  const list = JSON.parse(localStorage.getItem("portal2B_projects")) || [];
+
+  list.unshift({
+    nome: pname.value,
+    desc: pdesc.value,
+    link: plink.value,
+    aluno: user.nome,
+    ra: user.ra,
+    likes: 0
+  });
+
+  localStorage.setItem("portal2B_projects", JSON.stringify(list));
+  pname.value = pdesc.value = plink.value = "";
+
+  loadProjects();
+  loadRanking();
+}
+
+function like(index) {
+  const list = JSON.parse(localStorage.getItem("portal2B_projects"));
+  list[index].likes++;
+  localStorage.setItem("portal2B_projects", JSON.stringify(list));
+  loadProjects();
+  loadRanking();
+}
+
+function loadProjects() {
+  projectList.innerHTML = "";
+  const list = JSON.parse(localStorage.getItem("portal2B_projects")) || [];
+
+  list.forEach((p, i) => {
+    projectList.innerHTML += `
+      <div class="project">
+        <h4>${p.nome}</h4>
+        <p>${p.desc}</p>
+        ${p.link ? `<a href="${p.link}" target="_blank">Ver projeto</a>` : ""}
+        <p class="tag">${p.aluno} • RA ${p.ra}</p>
+        <button onclick="like(${i})">❤️ ${p.likes}</button>
+      </div>
+    `;
+  });
+}
+
+/* RANKING */
+function loadRanking() {
+  rankingList.innerHTML = "";
+  const list = JSON.parse(localStorage.getItem("portal2B_projects")) || [];
+  const rank = {};
+
+  list.forEach(p => {
+    rank[p.aluno] = (rank[p.aluno] || 0) + p.likes;
+  });
+
+  Object.entries(rank)
+    .sort((a,b) => b[1] - a[1])
+    .forEach(([nome, likes], i) => {
+      rankingList.innerHTML += `<p>${i+1}º ${nome} — ❤️ ${likes}</p>`;
+    });
+}
+
+/* AUTO LOGIN */
+const saved = JSON.parse(localStorage.getItem("portal2B_user"));
+if (saved) {
+  user = saved;
+  login.classList.add("hidden");
+  portal.classList.remove("hidden");
+  welcome.innerText = `Olá, ${user.nome} (RA ${user.ra})`;
+  loadProjects();
+  loadRanking();
+}
+</script>
+
+</body>
+</html>
